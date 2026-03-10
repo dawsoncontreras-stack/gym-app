@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Platform } from 'react-native';
 import { type Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../lib/supabase';
 import { createAuthRedirectUrl, extractAuthCode } from '../lib/auth-linking';
 
@@ -54,12 +52,14 @@ export function useAuth() {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const redirectTo = createAuthRedirectUrl();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: redirectTo },
-    });
+    // OTP mode: Supabase sends a 6-digit code instead of a magic link.
+    // Enable in dashboard: Authentication > Settings > Email OTP, set expiry to 300s (5 min).
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+  };
+
+  const verifySignUpOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
     if (error) throw error;
   };
 
@@ -91,25 +91,6 @@ export function useAuth() {
     }
   };
 
-  const signInWithApple = async () => {
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-    });
-
-    if (!credential.identityToken) {
-      throw new Error('No identity token returned from Apple');
-    }
-
-    const { error } = await supabase.auth.signInWithIdToken({
-      provider: 'apple',
-      token: credential.identityToken,
-    });
-    if (error) throw error;
-  };
-
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -119,9 +100,9 @@ export function useAuth() {
     session,
     loading,
     signUp,
+    verifySignUpOtp,
     signIn,
     signOut,
     signInWithGoogle,
-    signInWithApple,
   };
 }

@@ -15,6 +15,8 @@ export function Input({ label, error, containerClassName, className, ...props }:
           error ? 'border-red-500' : 'border-gray-300'
         } ${className ?? ''}`}
         placeholderTextColor="#9ca3af"
+        autoComplete="off"
+        textContentType={props.secureTextEntry ? 'oneTimeCode' : 'none'}
         {...props}
       />
       {error && <Text className="text-sm text-red-500 mt-1">{error}</Text>}

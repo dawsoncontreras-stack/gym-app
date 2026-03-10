@@ -33,7 +33,11 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer linking={linking}>
-      {profile?.onboarding_completed ? <MainNavigator /> : <OnboardingNavigator />}
+      {profile?.onboarding_completed ? (
+        <MainNavigator />
+      ) : (
+        <OnboardingNavigator />
+      )}
     </NavigationContainer>
   );
 }

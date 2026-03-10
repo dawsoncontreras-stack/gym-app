@@ -1,13 +1,10 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 export function SocialAuthButtons() {
-  const { signInWithGoogle, signInWithApple } = useAuth();
+  const { signInWithGoogle } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
-
-  const busy = googleLoading || appleLoading;
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -17,19 +14,6 @@ export function SocialAuthButtons() {
       Alert.alert('Error', error instanceof Error ? error.message : 'Google sign-in failed');
     } finally {
       setGoogleLoading(false);
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    setAppleLoading(true);
-    try {
-      await signInWithApple();
-    } catch (error) {
-      // User dismissed the Apple dialog — not an error
-      if ((error as any)?.code === 'ERR_REQUEST_CANCELED') return;
-      Alert.alert('Error', error instanceof Error ? error.message : 'Apple sign-in failed');
-    } finally {
-      setAppleLoading(false);
     }
   };
 
@@ -46,7 +30,7 @@ export function SocialAuthButtons() {
       <TouchableOpacity
         className="flex-row items-center justify-center py-3 rounded-xl border-2 border-gray-300 bg-white"
         onPress={handleGoogleSignIn}
-        disabled={busy}
+        disabled={googleLoading}
         activeOpacity={0.7}
       >
         {googleLoading ? (
@@ -55,22 +39,6 @@ export function SocialAuthButtons() {
           <Text className="text-base font-semibold text-gray-700">Continue with Google</Text>
         )}
       </TouchableOpacity>
-
-      {/* Apple — iOS only */}
-      {Platform.OS === 'ios' && (
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-3 rounded-xl bg-black mt-3"
-          onPress={handleAppleSignIn}
-          disabled={busy}
-          activeOpacity={0.7}
-        >
-          {appleLoading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text className="text-base font-semibold text-white">Continue with Apple</Text>
-          )}
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
