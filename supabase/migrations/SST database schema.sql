@@ -129,48 +129,7 @@ create table public.strength_ratios (
 
 
 -- ============================================================
--- 3. WORKOUT TEMPLATES (depend on reference tables only)
--- ============================================================
-
--- defines the shape of a workout (not specific exercises)
-create table public.workout_templates (
-  id uuid primary key default gen_random_uuid(),
-  name text not null, -- 'Push Day - Strength', 'Full Body - Beginner'
-  training_goal text not null,
-  split_type text not null, -- 'push', 'pull', 'legs', 'upper', 'lower', 'full_body'
-  experience_level text not null,
-  duration_minutes int not null,
-  total_sets_target int not null,
-  created_at timestamptz default now()
-);
-
--- each slot in a template
-create table public.template_slots (
-  id uuid primary key default gen_random_uuid(),
-  template_id uuid references public.workout_templates(id) on delete cascade,
-  slot_order int not null,
-  slot_role text not null check (slot_role in (
-    'primary_compound', 'secondary_compound', 'accessory',
-    'isolation', 'finisher', 'warmup', 'cooldown'
-  )),
-  movement_pattern text not null check (movement_pattern in (
-    'horizontal_push', 'horizontal_pull', 'vertical_push', 'vertical_pull',
-    'squat', 'hinge', 'lunge', 'carry', 'isolation',
-    'core', 'cardio', 'plyometric'
-  )),
-  muscle_group_id uuid references public.muscle_groups(id),
-  -- nullable = derived from split type
-  sets int not null default 3,
-  rep_range_low int not null default 8,
-  rep_range_high int not null default 12,
-  rest_seconds int not null default 60,
-  is_optional boolean default false
-  -- finishers/cooldowns can be skipped if short on time
-);
-
-
--- ============================================================
--- 4. USER & PROFILE (depend on auth.users)
+-- 3. USER & PROFILE (depend on auth.users)
 -- ============================================================
 
 create table public.profiles (
@@ -282,9 +241,27 @@ create table public.user_exercise_preferences (
   unique (user_id, exercise_id)
 );
 
+-- Auto-create a profile row when a new user signs up.
+-- This ensures OAuth users (Google, Apple) have a profile row
+-- immediately, which is needed for RLS policies and the
+-- onboarding flow check in the app.
+
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email)
+  values (new.id, new.email);
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
 
 -- ============================================================
--- 5. PROGRAMS (depend on profiles, exercises, templates)
+-- 4. PROGRAMS (depend on profiles, exercises)
 -- ============================================================
 
 create table public.programs (
@@ -308,7 +285,6 @@ create table public.program_workouts (
   program_id uuid references public.programs(id) on delete cascade,
   day_number int not null, -- day 1, 2, 3... within the week cycle
   name text, -- 'Push Day', 'Leg Day', etc.
-  template_id uuid references public.workout_templates(id),
   sort_order int not null,
   phase text check (phase in ('ramp_up', 'building', 'peak', 'deload', 'testing'))
   -- used for periodization
@@ -345,7 +321,7 @@ create table public.shared_programs (
 
 
 -- ============================================================
--- 6. USER WORKOUTS & LOGGING (depend on profiles, programs, exercises)
+-- 5. USER WORKOUTS & LOGGING (depend on profiles, programs, exercises)
 -- ============================================================
 
 -- the user's current active program
@@ -415,7 +391,7 @@ create table public.workout_logs (
 
 
 -- ============================================================
--- 7. PROGRESS TRACKING (depend on profiles, exercises)
+-- 6. PROGRESS TRACKING (depend on profiles, exercises)
 -- ============================================================
 
 -- per-exercise summary stats, updated after each completed workout
@@ -454,7 +430,7 @@ create table public.user_body_logs (
 
 
 -- ============================================================
--- 8. ACHIEVEMENTS, STREAKS & NOTIFICATIONS (depend on profiles)
+-- 7. ACHIEVEMENTS, STREAKS & NOTIFICATIONS (depend on profiles)
 -- ============================================================
 
 -- achievements unlocked by each user
@@ -500,7 +476,7 @@ create table public.notifications (
 
 
 -- ============================================================
--- 9. INDEXES
+-- 8. INDEXES
 -- ============================================================
 
 create index idx_exercises_movement on public.exercises(movement_pattern);
@@ -539,7 +515,7 @@ create index idx_alternatives_reverse on public.exercise_alternatives(alternativ
 
 
 -- ============================================================
--- 10. ROW LEVEL SECURITY
+-- 9. ROW LEVEL SECURITY
 -- ============================================================
 
 -- enable RLS on all user-data tables
@@ -562,6 +538,20 @@ alter table public.user_achievements enable row level security;
 alter table public.user_streaks enable row level security;
 alter table public.shared_programs enable row level security;
 alter table public.programs enable row level security;
+
+-- Reference data: anyone can read
+CREATE POLICY "Public read access" ON public.exercises FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.equipment FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.muscle_groups FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.achievements FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.exercise_alternatives FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.exercise_equipment FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.exercise_muscle_groups FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.strength_ratios FOR SELECT USING (true);
+
+-- Program structure: anyone can read (access to the program itself is already gated)
+CREATE POLICY "Public read access" ON public.program_workouts FOR SELECT USING (true);
+CREATE POLICY "Public read access" ON public.program_workout_exercises FOR SELECT USING (true);
 
 -- PROFILES
 create policy "Users can view own profile"
