@@ -14,14 +14,18 @@ import type { Profile } from '../types';
  *   queryClient.invalidateQueries({ queryKey: ['profile', userId] })
  */
 
-async function fetchProfile(userId: string): Promise<Profile> {
+async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // PGRST116 = no rows returned — profile not created yet (e.g. new OAuth user)
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
   return data;
 }
 

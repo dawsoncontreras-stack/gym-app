@@ -15,7 +15,10 @@
  */
 
 import { supabase } from '../lib/supabase';
-import type { Workout } from '../types';
+interface Workout {
+  id: string;
+  [key: string]: unknown;
+}
 
 interface GenerateWorkoutParams {
   userId: string;

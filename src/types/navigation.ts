@@ -8,3 +8,12 @@ export type MainTabParamList = {
   Workouts: undefined;
   Profile: undefined;
 };
+
+export type OnboardingStackParamList = {
+  BasicInfo: undefined;
+  Experience: undefined;
+  Equipment: undefined;
+  Schedule: undefined;
+  Limitations: undefined;
+  AnchorLifts: undefined;
+};

@@ -4,6 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'GymApp',
   slug: 'gym-app',
+  scheme: 'gymapp',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -28,5 +29,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     favicon: './assets/favicon.png',
   },
-  plugins: ["expo-secure-store"],
+  plugins: [
+    "expo-secure-store",
+    "expo-apple-authentication",
+    "expo-web-browser",
+  ],
 });

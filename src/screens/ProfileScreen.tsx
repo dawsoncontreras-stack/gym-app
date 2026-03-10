@@ -17,7 +17,7 @@ export function ProfileScreen() {
 
       <Card className="mb-4">
         <Text className="text-lg font-semibold text-gray-800">
-          {profile?.full_name ?? 'No name set'}
+          {profile?.display_name ?? 'No name set'}
         </Text>
         <Text className="text-gray-600 mt-1">{profile?.email ?? session?.user?.email}</Text>
       </Card>
