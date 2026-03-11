@@ -50,6 +50,48 @@ export interface Exercise {
   created_at: string;
 }
 
+// ─── Workout Types ───────────────────────────────────────────
+
+export interface UserWorkoutExercise {
+  id: string;
+  user_workout_id: string;
+  exercise_id: string;
+  sort_order: number;
+  sets_prescribed: number;
+  rep_range_low: number;
+  rep_range_high: number;
+  rest_seconds: number;
+  is_swapped: boolean;
+  original_exercise_id: string | null;
+  is_added: boolean;
+  is_skipped: boolean;
+  notes: string | null;
+  // Joined
+  exercises: Pick<Exercise, 'id' | 'name' | 'slug' | 'movement_pattern' | 'exercise_type' | 'difficulty_tier' | 'default_sets' | 'default_rep_range_low' | 'default_rep_range_high' | 'default_rest_seconds'>;
+}
+
+export interface WorkoutDay {
+  id: string;
+  user_id: string;
+  program_workout_id: string;
+  scheduled_date: string | null;
+  status: 'pending' | 'in_progress' | 'completed' | 'skipped';
+  started_at: string | null;
+  completed_at: string | null;
+  notes: string | null;
+  // Joined
+  program_workouts: {
+    id: string;
+    name: string;
+    day_number: number;
+    sort_order: number;
+    program_id: string;
+  };
+  user_workout_exercises: UserWorkoutExercise[];
+}
+
+export type ExercisePreference = 'recommend_more' | 'recommend_less' | 'never_recommend';
+
 // ─── Re-exports ───────────────────────────────────────────────
 
 export type { AuthStackParamList, MainTabParamList, OnboardingStackParamList } from './navigation';

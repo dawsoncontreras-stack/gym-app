@@ -5,3 +5,6 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { ProgressBar } from './ProgressBar';
 export { OptionCard } from './OptionCard';
 export { SocialAuthButtons } from './SocialAuthButtons';
+export { ExerciseCard } from './ExerciseCard';
+export { WorkoutSwapSheet } from './WorkoutSwapSheet';
+export { ExercisePickerModal } from './ExercisePickerModal';

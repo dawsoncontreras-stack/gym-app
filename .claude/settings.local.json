@@ -9,7 +9,26 @@
       "Bash(npm audit)",
       "Bash(xargs cat)",
       "Bash(npx supabase:*)",
-      "Bash(supabase functions:*)"
+      "Bash(supabase functions:*)",
+      "Bash(find /c/code/gym-app -type f -name *.log -o -name *error*)",
+      "Bash(ls -la /c/code/gym-app/*.json)",
+      "Bash(npx expo:*)",
+      "Bash(npm install:*)",
+      "Bash(npm ls:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''SDK:'''', d.get\\(''''sdkVersion'''',''''?''''\\)\\)\")",
+      "Bash(node -e \"const pkg=require\\(''./node_modules/expo/package.json''\\); console.log\\(''Expo:'', pkg.version\\)\")",
+      "Bash(node -e \"const pkg=require\\(''./node_modules/react-native-reanimated/package.json''\\); console.log\\(''Reanimated:'', pkg.version\\)\")",
+      "Bash(node -e \"const cfg = require\\(''./node_modules/expo/bundledNativeModules.json''\\); console.log\\(''reanimated:'', cfg[''react-native-reanimated'']\\); console.log\\(''gesture-handler:'', cfg[''react-native-gesture-handler'']\\)\")",
+      "Bash(npm info:*)",
+      "Bash(node -e \"try { require.resolve\\(''react-native-reanimated/plugin''\\); console.log\\(''found''\\) } catch\\(e\\) { console.log\\(''not found:'', e.message.split\\(''\\\\n''\\)[0]\\) }\")",
+      "Bash(node -e \"try { require.resolve\\(''react-native-worklets/plugin''\\); console.log\\(''found''\\) } catch\\(e\\) { console.log\\(''not found''\\) }\")",
+      "Bash(node -e \"const p = require\\(''''react-native-reanimated/plugin''''\\); console.log\\(typeof p\\)\")",
+      "Bash(ls node_modules/react-native-reanimated/plugin*)",
+      "Bash(node -e \"console.log\\(require\\(''./node_modules/react-native-reanimated/package.json''\\).version\\)\")",
+      "Bash(node -e \"const pkg=require\\(''./node_modules/react-native-reanimated/package.json''\\); console.log\\(''wants worklets:'', pkg.dependencies[''react-native-worklets''] || pkg.peerDependencies?.[''react-native-worklets'']\\)\")",
+      "Bash(node -e \"try { const m = require\\(''@react-navigation/core''\\); console.log\\(''NavigationStateContext:'', !!m.NavigationStateContext\\) } catch\\(e\\) { console.log\\(e.message\\) }\")",
+      "Bash(node -e \"const m = require\\(''@react-navigation/core''\\); console.log\\(''Has NavigationStateContext:'', ''NavigationStateContext'' in m\\)\")",
+      "Bash(find /c/code/gym-app/src -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.js \\\\\\))"
     ]
   }
 }
