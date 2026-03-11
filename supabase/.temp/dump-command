@@ -1,0 +1,1 @@
+npx supabase db dump -s public -f supabase/migrations/dump.sql
