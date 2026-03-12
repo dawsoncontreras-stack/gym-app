@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest . --template blank-typescript)",
+      "Read(//c/code/**)",
+      "Bash(npx create-expo-app@latest gym-app-temp --template blank-typescript)",
+      "Bash(cp -r /c/code/gym-app-temp/* /c/code/gym-app/)",
+      "Bash(cp /c/code/gym-app-temp/.gitignore /c/code/gym-app/)",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx expo:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(taskkill //F //IM \"node.exe\" //FI \"WINDOWTITLE eq *metro*\")",
+      "Bash(find node_modules/nativewind -name *.cache -o -name .cache)",
+      "Bash(rm -rf /tmp/metro-*)",
+      "Bash(rm -rf /tmp/haste-*)",
+      "Bash(ls /tmp/metro-*)",
+      "Bash(find node_modules/nativewind -name *.css -o -name output*)",
+      "Bash(find . -name nativewind-output* -o -name .nativewind*)",
+      "Bash(find . -path ./node_modules -prune -o -name *.css -print)"
+    ]
+  }
+}
