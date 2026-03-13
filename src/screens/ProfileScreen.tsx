@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { ProfileStackParamList } from '../navigation/ProfileStack';
+import type { HomeStackParamList } from '../navigation/HomeStack';
 import type { UserSessionHistoryView } from '../lib/types';
 import { useSavedWorkouts } from '../hooks/useSavedWorkouts';
 import { useSessionHistory } from '../hooks/useSessionHistory';
@@ -10,7 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { formatDuration, formatVolume } from '../utils/formatters';
 import WorkoutCard from '../components/workout/WorkoutCard';
 
-type Nav = NativeStackNavigationProp<ProfileStackParamList, 'Profile'>;
+type Nav = NativeStackNavigationProp<HomeStackParamList, 'Profile'>;
 
 export default function ProfileScreen() {
   const navigation = useNavigation<Nav>();
@@ -23,12 +23,47 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="flex-row items-center justify-between px-4 pb-2 pt-6">
-          <Text className="text-2xl font-bold text-ink">Profile</Text>
+        <View className="flex-row items-center justify-between px-4 pb-2 pt-4">
+          <View className="flex-row items-center">
+            <Pressable onPress={() => navigation.goBack()} className="mr-3 p-1">
+              <Text className="text-lg text-accent">‹ Back</Text>
+            </Pressable>
+            <Text className="text-xl font-bold text-ink">Profile</Text>
+          </View>
           <Pressable onPress={signOut} className="rounded-lg bg-error/10 px-3 py-1.5">
             <Text className="text-xs font-medium text-error">Sign Out</Text>
           </Pressable>
         </View>
+
+        {/* My Stack */}
+        <Pressable
+          onPress={() => navigation.navigate('Stack')}
+          className="mx-4 mt-4 mb-2 flex-row items-center justify-between rounded-xl bg-surface-secondary px-4 py-4"
+        >
+          <View className="flex-row items-center gap-3">
+            <Text className="text-lg">💊</Text>
+            <View>
+              <Text className="text-sm font-semibold text-ink">My Stack</Text>
+              <Text className="text-xs text-ink-muted">Manage your supplements</Text>
+            </View>
+          </View>
+          <Text className="text-sm text-ink-muted">›</Text>
+        </Pressable>
+
+        {/* Supplement Guide */}
+        <Pressable
+          onPress={() => navigation.navigate('EducationList')}
+          className="mx-4 mb-2 flex-row items-center justify-between rounded-xl bg-surface-secondary px-4 py-4"
+        >
+          <View className="flex-row items-center gap-3">
+            <Text className="text-lg">📖</Text>
+            <View>
+              <Text className="text-sm font-semibold text-ink">Supplement Guide</Text>
+              <Text className="text-xs text-ink-muted">Learn about your supplements</Text>
+            </View>
+          </View>
+          <Text className="text-sm text-ink-muted">›</Text>
+        </Pressable>
 
         {/* Saved Workouts */}
         <View className="mt-4">

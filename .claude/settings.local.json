@@ -23,7 +23,14 @@
       "Bash(find . -path ./node_modules -prune -o -name *.css -print)",
       "Bash(git rm:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(while read:*)",
+      "Bash(do git:*)",
+      "Bash(done)",
+      "Bash(git add:*)",
+      "Bash(find /c/code/gym-app -type f -name *scope* -o -name *App*)",
+      "Bash(xargs wc:*)",
+      "Bash(grep -l \"Supplement\\\\|supplement\\\\|Stack\\\\|stack\\\\|Dose\\\\|Product\" /c/code/gym-app/src/**/*.tsx)"
     ]
   }
 }

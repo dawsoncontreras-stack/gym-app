@@ -1,16 +1,13 @@
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import HomeStack from './HomeStack';
 import BrowseStack from './BrowseStack';
 import CalendarStack from './CalendarStack';
-import ProfileStack from './ProfileStack';
-
 export type TabParamList = {
   HomeTab: undefined;
   BrowseTab: undefined;
   CalendarTab: undefined;
-  ProfileTab: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -127,33 +124,6 @@ function CalendarIcon({ color }: { color: string }) {
   );
 }
 
-function ProfileIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 22, height: 22, alignItems: 'center' }}>
-      {/* Head */}
-      <View
-        style={{
-          width: 9,
-          height: 9,
-          borderRadius: 4.5,
-          backgroundColor: color,
-        }}
-      />
-      {/* Body */}
-      <View
-        style={{
-          width: 16,
-          height: 8,
-          backgroundColor: color,
-          borderTopLeftRadius: 8,
-          borderTopRightRadius: 8,
-          marginTop: 2,
-        }}
-      />
-    </View>
-  );
-}
-
 export default function TabNavigator() {
   return (
     <Tab.Navigator
@@ -199,14 +169,6 @@ export default function TabNavigator() {
         options={{
           tabBarLabel: 'Calendar',
           tabBarIcon: ({ color }) => <CalendarIcon color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={ProfileStack}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <ProfileIcon color={color} />,
         }}
       />
     </Tab.Navigator>

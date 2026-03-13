@@ -12,9 +12,11 @@ type WorkoutCardProps = {
   workout: Workout;
   onPress: () => void;
   variant?: 'grid' | 'horizontal';
+  isSaved?: boolean;
+  onToggleSave?: () => void;
 };
 
-export default function WorkoutCard({ workout, onPress, variant = 'grid' }: WorkoutCardProps) {
+export default function WorkoutCard({ workout, onPress, variant = 'grid', isSaved, onToggleSave }: WorkoutCardProps) {
   const isHorizontal = variant === 'horizontal';
 
   return (
@@ -43,6 +45,20 @@ export default function WorkoutCard({ workout, onPress, variant = 'grid' }: Work
             </Text>
           </View>
         </View>
+        {onToggleSave && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              onToggleSave();
+            }}
+            className="absolute top-2 right-2 h-7 w-7 items-center justify-center rounded-full bg-black/40"
+            hitSlop={8}
+          >
+            <Text className={`text-sm ${isSaved ? 'text-warning' : 'text-white'}`}>
+              {isSaved ? '★' : '☆'}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       <View className="px-3 py-2.5">

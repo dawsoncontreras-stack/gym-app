@@ -1,15 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { BrowseStackParamList } from '../navigation/BrowseStack';
 import { useWorkouts } from '../hooks/useWorkouts';
 import { useCategories } from '../hooks/useCategories';
+import { useSavedWorkouts } from '../hooks/useSavedWorkouts';
+import { useAuthStore } from '../stores/authStore';
 import WorkoutCard from '../components/workout/WorkoutCard';
 import FilterBar, { type ActiveFilters } from '../components/workout/FilterBar';
 
 type Nav = NativeStackNavigationProp<BrowseStackParamList, 'Browse'>;
+type Route = RouteProp<BrowseStackParamList, 'Browse'>;
 
 const EMPTY_FILTERS: ActiveFilters = {
   difficulties: [],
@@ -20,8 +24,28 @@ const EMPTY_FILTERS: ActiveFilters = {
 
 export default function BrowseScreen() {
   const navigation = useNavigation<Nav>();
-  const [filters, setFilters] = useState<ActiveFilters>(EMPTY_FILTERS);
+  const route = useRoute<Route>();
+  const incomingCategoryId = route.params?.categoryId;
+
+  // Build initial filters from navigation params
+  const initialFilters = useMemo<ActiveFilters>(() => {
+    if (incomingCategoryId) {
+      return { ...EMPTY_FILTERS, categoryIds: [incomingCategoryId] };
+    }
+    return EMPTY_FILTERS;
+  }, [incomingCategoryId]);
+
+  const [filters, setFilters] = useState<ActiveFilters>(initialFilters);
   const { data: categories } = useCategories();
+
+  // If navigated to with a new categoryId, update filters
+  const lastCategoryId = useRef(incomingCategoryId);
+  useEffect(() => {
+    if (incomingCategoryId && incomingCategoryId !== lastCategoryId.current) {
+      lastCategoryId.current = incomingCategoryId;
+      setFilters((prev) => ({ ...prev, categoryIds: [incomingCategoryId] }));
+    }
+  }, [incomingCategoryId]);
 
   const queryFilters = useMemo(
     () => ({
@@ -34,6 +58,9 @@ export default function BrowseScreen() {
   );
 
   const { data: workouts, isLoading, error } = useWorkouts(queryFilters);
+  const userId = useAuthStore((s) => s.user?.id);
+  const { data: savedWorkouts, saveWorkout, unsaveWorkout } = useSavedWorkouts(userId);
+  const savedIds = useMemo(() => new Set(savedWorkouts?.map((sw) => sw.workout_id) ?? []), [savedWorkouts]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
@@ -71,6 +98,11 @@ export default function BrowseScreen() {
             <WorkoutCard
               workout={item}
               variant="grid"
+              isSaved={savedIds.has(item.id)}
+              onToggleSave={() => {
+                if (!userId) return;
+                savedIds.has(item.id) ? unsaveWorkout(item.id) : saveWorkout(item.id);
+              }}
               onPress={() => navigation.navigate('WorkoutDetail', { workoutId: item.id })}
             />
           )}

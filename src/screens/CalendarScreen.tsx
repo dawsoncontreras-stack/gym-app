@@ -9,8 +9,11 @@ import type { TabParamList } from '../navigation/TabNavigator';
 import type { UserCalendarView, UserSessionHistoryView } from '../lib/types';
 import { useScheduledWorkouts } from '../hooks/useScheduledWorkouts';
 import { useSessionHistory } from '../hooks/useSessionHistory';
+import { useUserStack } from '../hooks/useUserStack';
+import { useSavedWorkouts } from '../hooks/useSavedWorkouts';
 import { useAuthStore } from '../stores/authStore';
 import { formatEstimatedMinutes, formatDuration, formatVolume } from '../utils/formatters';
+import StackCheckIn from '../components/supplement/StackCheckIn';
 
 type Nav = NativeStackNavigationProp<CalendarStackParamList, 'Calendar'>;
 
@@ -73,19 +76,30 @@ export default function CalendarScreen() {
   const weekStart = days[0].key;
   const today = formatDateKey(new Date());
 
-  // Reset to defaults when the calendar tab is pressed
-  const parent = navigation.getParent<BottomTabNavigationProp<TabParamList>>();
+  // Double-tap calendar tab to reset to current week with no selection
   useEffect(() => {
+    let parent;
+    try {
+      parent = navigation.getParent<BottomTabNavigationProp<TabParamList>>();
+    } catch {
+      return;
+    }
     if (!parent) return;
-    const unsubscribe = parent.addListener('tabPress', () => {
-      setWeekOffset(0);
-      setSelectedDayKey(null);
+    const unsubscribe = parent.addListener('tabPress', (e) => {
+      // Only reset if already on the calendar tab (double-tap behavior)
+      if (navigation.isFocused()) {
+        setWeekOffset(0);
+        setSelectedDayKey(null);
+      }
     });
     return unsubscribe;
-  }, [parent]);
+  }, [navigation]);
 
   const { data: scheduled, isLoading } = useScheduledWorkouts(userId, weekStart);
   const { data: sessions } = useSessionHistory(userId);
+  const { data: stackItems } = useUserStack(userId);
+  const { data: savedWorkouts, saveWorkout, unsaveWorkout } = useSavedWorkouts(userId);
+  const savedIds = useMemo(() => new Set(savedWorkouts?.map((sw) => sw.workout_id) ?? []), [savedWorkouts]);
 
   // Group scheduled workouts by date
   const byDate = useMemo(() => {
@@ -239,7 +253,7 @@ export default function CalendarScreen() {
               </Text>
               <View
                 className={`mt-0.5 h-8 w-8 items-center justify-center rounded-full ${
-                  isSelected ? 'bg-accent shadow-card' : ''
+                  isSelected ? 'bg-accent' : ''
                 }`}
               >
                 <Text
@@ -289,6 +303,13 @@ export default function CalendarScreen() {
               {selectedDay.date.getDate()}
             </Text>
 
+            {/* Daily Check-In (only for today) */}
+            {selectedDayKey === today && stackItems && stackItems.length > 0 && (
+              <View className="mb-3">
+                <StackCheckIn items={stackItems} source="calendar" />
+              </View>
+            )}
+
             {/* Completed workouts (from schedule) */}
             {selectedCompleted.length > 0 && (
               <View className="mb-3">
@@ -301,6 +322,11 @@ export default function CalendarScreen() {
                     item={item}
                     isPast={false}
                     showThumbnail
+                    isSaved={savedIds.has(item.workout_id)}
+                    onToggleSave={() => {
+                      if (!userId) return;
+                      savedIds.has(item.workout_id) ? unsaveWorkout(item.workout_id) : saveWorkout(item.workout_id);
+                    }}
                     onPress={() =>
                       navigation.navigate('WorkoutDetail', { workoutId: item.workout_id })
                     }
@@ -319,6 +345,11 @@ export default function CalendarScreen() {
                   <SessionCard
                     key={session.session_id}
                     session={session}
+                    isSaved={savedIds.has(session.workout_id)}
+                    onToggleSave={() => {
+                      if (!userId) return;
+                      savedIds.has(session.workout_id) ? unsaveWorkout(session.workout_id) : saveWorkout(session.workout_id);
+                    }}
                     onPress={() =>
                       navigation.navigate('SessionDetail', { sessionId: session.session_id })
                     }
@@ -339,6 +370,11 @@ export default function CalendarScreen() {
                     item={item}
                     isPast={selectedDayKey! < today}
                     showThumbnail
+                    isSaved={savedIds.has(item.workout_id)}
+                    onToggleSave={() => {
+                      if (!userId) return;
+                      savedIds.has(item.workout_id) ? unsaveWorkout(item.workout_id) : saveWorkout(item.workout_id);
+                    }}
                     onPress={() =>
                       navigation.navigate('WorkoutDetail', { workoutId: item.workout_id })
                     }
@@ -452,11 +488,15 @@ function ScheduledWorkoutCard({
   isPast,
   showThumbnail,
   onPress,
+  isSaved,
+  onToggleSave,
 }: {
   item: UserCalendarView;
   isPast: boolean;
   showThumbnail?: boolean;
   onPress: () => void;
+  isSaved?: boolean;
+  onToggleSave?: () => void;
 }) {
   const isCompleted = item.is_completed;
   const isMissed = isPast && !isCompleted;
@@ -499,7 +539,22 @@ function ScheduledWorkoutCard({
       </View>
 
       {isCompleted && item.rating != null && (
-        <Text className="text-xs text-warning">{item.rating}/5</Text>
+        <Text className="mr-2 text-xs text-warning">{item.rating}/5</Text>
+      )}
+
+      {onToggleSave && (
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleSave();
+          }}
+          className="p-1"
+          hitSlop={8}
+        >
+          <Text className={`text-base ${isSaved ? 'text-warning' : 'text-ink-muted'}`}>
+            {isSaved ? '★' : '☆'}
+          </Text>
+        </Pressable>
       )}
     </Pressable>
   );
@@ -510,9 +565,13 @@ function ScheduledWorkoutCard({
 function SessionCard({
   session,
   onPress,
+  isSaved,
+  onToggleSave,
 }: {
   session: UserSessionHistoryView;
   onPress: () => void;
+  isSaved?: boolean;
+  onToggleSave?: () => void;
 }) {
   return (
     <Pressable
@@ -549,7 +608,22 @@ function SessionCard({
       </View>
 
       {session.rating != null && (
-        <Text className="text-xs text-warning">{session.rating}/5</Text>
+        <Text className="mr-2 text-xs text-warning">{session.rating}/5</Text>
+      )}
+
+      {onToggleSave && (
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleSave();
+          }}
+          className="p-1"
+          hitSlop={8}
+        >
+          <Text className={`text-base ${isSaved ? 'text-warning' : 'text-ink-muted'}`}>
+            {isSaved ? '★' : '☆'}
+          </Text>
+        </Pressable>
       )}
     </Pressable>
   );

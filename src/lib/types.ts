@@ -205,3 +205,181 @@ export type SessionExerciseLog = {
   is_warmup: boolean;
   skipped: boolean;
 };
+
+// ============================================================================
+// Supplement Enums
+// ============================================================================
+
+export type StackItemStatus = 'arriving' | 'active' | 'running_low' | 'reorder' | 'archived';
+export type FitnessGoal = 'build_muscle' | 'lose_fat' | 'stay_active' | 'general_health';
+export type DoseSource = 'home' | 'post_workout' | 'notification' | 'stack_screen' | 'calendar';
+
+// ============================================================================
+// Supplement Types
+// ============================================================================
+
+export type Product = {
+  id: string;
+  name: string;
+  short_description: string | null;
+  description: string | null;
+  image_url: string | null;
+  thumbnail_url: string | null;
+  tags: string[];
+  default_days_supply: number;
+  shopify_url: string | null;
+  price_cents: number | null;
+  education_markdown: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UserProfile = {
+  id: string;
+  fitness_goal: FitnessGoal | null;
+  has_completed_onboarding: boolean;
+  preferred_units: 'lbs' | 'kg';
+  weight_tracking_hints_shown: number;
+  expo_push_token: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UserStackItem = {
+  id: string;
+  user_id: string;
+  product_id: string;
+  status: StackItemStatus;
+  activated_at: string | null;
+  days_supply: number;
+  estimated_depletion_date: string | null;
+  reorder_cycle_count: number;
+  reorder_entered_at: string | null;
+  last_reorder_notified_at: string | null;
+  reorder_notification_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DoseLog = {
+  id: string;
+  user_id: string;
+  stack_item_id: string;
+  logged_date: string;
+  logged_at: string;
+  source: DoseSource;
+};
+
+export type Promotion = {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  discount_code: string;
+  discount_label: string | null;
+  product_ids: string[] | null;
+  starts_at: string;
+  ends_at: string;
+  shopify_url: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type WorkoutSupplementSuggestion = {
+  id: string;
+  category_id: string | null;
+  product_id: string;
+  message_if_tracking: string | null;
+  message_if_not_tracking: string | null;
+  priority: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type UserSuggestionDismissal = {
+  id: string;
+  user_id: string;
+  product_id: string;
+  dismissal_count: number;
+  last_dismissed_at: string;
+};
+
+export type UserWelcomeDiscount = {
+  user_id: string;
+  discount_code: string;
+  shown_at: string;
+  dismissed_at: string | null;
+  created_at: string;
+};
+
+export type UserPromotionDismissal = {
+  user_id: string;
+  promotion_id: string;
+  dismissed_at: string;
+};
+
+export type ReorderDiscountCode = {
+  id: string;
+  cycle_number: number;
+  discount_code: string;
+  discount_label: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+// ============================================================================
+// Supplement View Types
+// ============================================================================
+
+export type StackStatusView = {
+  stack_item_id: string;
+  user_id: string;
+  status: 'arriving' | 'active' | 'running_low' | 'reorder';
+  activated_at: string | null;
+  days_supply: number;
+  estimated_depletion_date: string | null;
+  reorder_cycle_count: number;
+  days_remaining: number | null;
+  days_elapsed: number | null;
+  taken_today: boolean;
+  product_id: string;
+  product_name: string;
+  product_image_url: string | null;
+  product_thumbnail_url: string | null;
+  product_shopify_url: string | null;
+};
+
+export type UserAdherenceView = {
+  stack_item_id: string;
+  user_id: string;
+  product_name: string;
+  trackable_days: number;
+  logged_days: number;
+  adherence_pct: number;
+};
+
+export type ArchivedStackView = {
+  stack_item_id: string;
+  user_id: string;
+  reorder_entered_at: string | null;
+  reorder_cycle_count: number;
+  product_id: string;
+  product_name: string;
+  product_image_url: string | null;
+  product_thumbnail_url: string | null;
+};
+
+// ============================================================================
+// Monthly Recap (client-side computed)
+// ============================================================================
+
+export type MonthlyRecap = {
+  workoutCount: number;
+  totalVolume: number;
+  volumeChangePercent: number | null;
+  supplementAdherence: { productName: string; daysLogged: number; totalDays: number }[];
+  longestStack: { productName: string; weeks: number } | null;
+  month: string;
+};

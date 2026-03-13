@@ -7,6 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
   Modal,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -67,8 +68,23 @@ export default function WorkoutDetailScreen() {
     }
   };
 
+  // ── 3-dot menu state ──
+  const [showMenu, setShowMenu] = useState(false);
+
+  const handleShare = async () => {
+    setShowMenu(false);
+    if (!workout) return;
+    try {
+      await Share.share({
+        message: `Check out this workout: ${workout.title}`,
+      });
+    } catch (_e) {
+      // user cancelled
+    }
+  };
+
   // ── Schedule modal state ──
-  const [showModal, setShowModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [selectedHour, setSelectedHour] = useState(9);
   const [selectedMinute, setSelectedMinute] = useState(0);
@@ -88,9 +104,9 @@ export default function WorkoutDetailScreen() {
   );
 
   const handleOpenSchedule = () => {
+    setShowMenu(false);
     const now = new Date();
     setSelectedDayIndex(0);
-    // Round up to the next 15-minute mark
     const m = now.getMinutes();
     const roundedMinute = Math.ceil(m / 15) * 15;
     if (roundedMinute >= 60) {
@@ -100,7 +116,7 @@ export default function WorkoutDetailScreen() {
       setSelectedHour(now.getHours());
       setSelectedMinute(roundedMinute);
     }
-    setShowModal(true);
+    setShowScheduleModal(true);
   };
 
   const handleConfirmSchedule = () => {
@@ -109,7 +125,7 @@ export default function WorkoutDetailScreen() {
     const timeStr = `${pad(selectedHour)}:${pad(selectedMinute)}`;
     scheduleMutation.mutate(
       { userId, workoutId, scheduledDate: day.key, timeOfDay: timeStr },
-      { onSuccess: () => setShowModal(false) }
+      { onSuccess: () => setShowScheduleModal(false) }
     );
   };
 
@@ -155,6 +171,14 @@ export default function WorkoutDetailScreen() {
           >
             <Text className="text-base text-white">←</Text>
           </Pressable>
+
+          {/* 3-dot menu button overlay */}
+          <Pressable
+            onPress={() => setShowMenu(true)}
+            className="absolute right-4 top-4 h-9 w-9 items-center justify-center rounded-full bg-black/50"
+          >
+            <Text className="text-base text-white">⋯</Text>
+          </Pressable>
         </View>
 
         <View className="px-4 pt-4">
@@ -183,28 +207,6 @@ export default function WorkoutDetailScreen() {
             </Text>
           )}
 
-          {/* Action buttons */}
-          <View className="mt-4 flex-row gap-3">
-            <Pressable
-              onPress={handleToggleSave}
-              disabled={isSaving || isUnsaving}
-              className={`flex-1 flex-row items-center justify-center rounded-lg py-3 ${
-                isSaved ? 'bg-error/10' : 'border border-surface-tertiary bg-surface-tertiary'
-              }`}
-            >
-              <Text className={`text-sm font-medium ${isSaved ? 'text-error' : 'text-ink'}`}>
-                {isSaved ? 'Unsave' : 'Save'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={handleOpenSchedule}
-              className="flex-1 flex-row items-center justify-center rounded-lg border border-surface-tertiary bg-surface-tertiary py-3"
-            >
-              <Text className="text-sm font-medium text-ink">Schedule</Text>
-            </Pressable>
-          </View>
-
           {/* Sections + Exercises */}
           <View className="mt-4 pb-28">
             {workout.sections.map((section) => (
@@ -231,16 +233,69 @@ export default function WorkoutDetailScreen() {
         </Pressable>
       </View>
 
-      {/* ── Schedule Modal ── */}
+      {/* ── 3-dot Menu Modal ── */}
       <Modal
-        visible={showModal}
+        visible={showMenu}
         transparent
-        animationType="slide"
-        onRequestClose={() => setShowModal(false)}
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
       >
         <Pressable
           className="flex-1 justify-end bg-black/50"
-          onPress={() => setShowModal(false)}
+          onPress={() => setShowMenu(false)}
+        >
+          <Pressable onPress={() => {}} className="rounded-t-3xl bg-surface px-5 pb-10 pt-4">
+            {/* Handle bar */}
+            <View className="mb-4 items-center">
+              <View className="h-1 w-10 rounded-full bg-ink-muted/30" />
+            </View>
+
+            {/* Save option */}
+            <Pressable
+              onPress={() => {
+                handleToggleSave();
+                setShowMenu(false);
+              }}
+              disabled={isSaving || isUnsaving}
+              className="flex-row items-center py-4 border-b border-surface-tertiary"
+            >
+              <Text className="text-lg mr-3">{isSaved ? '★' : '☆'}</Text>
+              <Text className="text-base text-ink">
+                {isSaved ? 'Unsave Workout' : 'Save Workout'}
+              </Text>
+            </Pressable>
+
+            {/* Schedule option */}
+            <Pressable
+              onPress={handleOpenSchedule}
+              className="flex-row items-center py-4 border-b border-surface-tertiary"
+            >
+              <Text className="text-lg mr-3">📅</Text>
+              <Text className="text-base text-ink">Schedule Workout</Text>
+            </Pressable>
+
+            {/* Share option */}
+            <Pressable
+              onPress={handleShare}
+              className="flex-row items-center py-4"
+            >
+              <Text className="text-lg mr-3">🔗</Text>
+              <Text className="text-base text-ink">Share Workout</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Schedule Modal ── */}
+      <Modal
+        visible={showScheduleModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowScheduleModal(false)}
+      >
+        <Pressable
+          className="flex-1 justify-end bg-black/50"
+          onPress={() => setShowScheduleModal(false)}
         >
           <Pressable
             onPress={() => {}}
@@ -395,7 +450,7 @@ export default function WorkoutDetailScreen() {
             {/* Action buttons */}
             <View className="flex-row gap-3">
               <Pressable
-                onPress={() => setShowModal(false)}
+                onPress={() => setShowScheduleModal(false)}
                 className="flex-1 items-center rounded-full border border-surface-tertiary py-4"
               >
                 <Text className="text-base font-semibold text-ink">Cancel</Text>

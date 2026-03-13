@@ -6,7 +6,7 @@ import WorkoutPlayerScreen from '../screens/WorkoutPlayerScreen';
 import SessionSummaryScreen from '../screens/SessionSummaryScreen';
 
 export type BrowseStackParamList = {
-  Browse: undefined;
+  Browse: { categoryId?: string } | undefined;
   WorkoutDetail: { workoutId: string };
   WorkoutPlayer: { workoutId: string };
   SessionSummary: { sessionData: unknown };

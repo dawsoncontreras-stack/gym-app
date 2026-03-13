@@ -4,6 +4,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../navigation/HomeStack';
 import type { Category } from '../../lib/types';
 import { useWorkoutsByCategory } from '../../hooks/useWorkoutsByCategory';
+import { useSavedWorkouts } from '../../hooks/useSavedWorkouts';
+import { useAuthStore } from '../../stores/authStore';
 import WorkoutCard from './WorkoutCard';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
@@ -15,6 +17,9 @@ type CategoryRowProps = {
 export default function CategoryRow({ category }: CategoryRowProps) {
   const { data: workouts, isLoading } = useWorkoutsByCategory(category.id);
   const navigation = useNavigation<Nav>();
+  const userId = useAuthStore((s) => s.user?.id);
+  const { data: savedWorkouts, saveWorkout, unsaveWorkout } = useSavedWorkouts(userId);
+  const savedIds = new Set(savedWorkouts?.map((sw) => sw.workout_id) ?? []);
 
   if (isLoading) {
     return (
@@ -39,6 +44,11 @@ export default function CategoryRow({ category }: CategoryRowProps) {
           <WorkoutCard
             workout={item}
             variant="horizontal"
+            isSaved={savedIds.has(item.id)}
+            onToggleSave={() => {
+              if (!userId) return;
+              savedIds.has(item.id) ? unsaveWorkout(item.id) : saveWorkout(item.id);
+            }}
             onPress={() => navigation.navigate('WorkoutDetail', { workoutId: item.id })}
           />
         )}

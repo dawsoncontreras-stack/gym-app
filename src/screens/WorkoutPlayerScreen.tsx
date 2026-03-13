@@ -15,7 +15,9 @@ import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 import { useWorkoutDetail } from '../hooks/useWorkoutDetail';
+import { useExerciseHistory } from '../hooks/useExerciseHistory';
 import { usePlayerStore } from '../stores/playerStore';
+import { useAuthStore } from '../stores/authStore';
 import { formatTimer } from '../utils/formatters';
 import RestTimer from '../components/workout/RestTimer';
 import type { PlayerStep, WorkoutSectionExercise, Exercise } from '../lib/types';
@@ -28,6 +30,21 @@ export default function WorkoutPlayerScreen() {
   const navigation = useNavigation<PlayerNav>();
   const { workoutId } = route.params;
   const { data: workout, isLoading } = useWorkoutDetail(workoutId);
+  const userId = useAuthStore((s) => s.user?.id);
+
+  // Extract all exercise IDs from the workout for history lookup
+  const exerciseIds = useMemo(() => {
+    if (!workout) return undefined;
+    const ids = new Set<string>();
+    for (const section of workout.sections ?? []) {
+      for (const ex of section.exercises ?? []) {
+        ids.add(ex.exercise_id);
+      }
+    }
+    return [...ids];
+  }, [workout]);
+
+  const { data: exerciseHistory } = useExerciseHistory(userId, exerciseIds);
 
   const steps = usePlayerStore((s) => s.steps);
   const currentStepIndex = usePlayerStore((s) => s.currentStepIndex);
@@ -89,17 +106,26 @@ export default function WorkoutPlayerScreen() {
   const currentStep = steps[currentStepIndex];
 
   // Sync editable weight when step changes
+  // Priority: 1) workout template weight_lbs, 2) last recorded weight from history
   const weightForStep = useMemo(() => {
     if (currentStep?.type === 'exercise' && currentStep.exercise) {
       const tt =
         currentStep.exercise.tracking_type ??
         currentStep.exercise.exercise.default_tracking_type;
-      if (tt === 'weighted' && currentStep.exercise.weight_lbs) {
-        return String(currentStep.exercise.weight_lbs);
+      if (tt === 'weighted') {
+        // Use template weight if specified
+        if (currentStep.exercise.weight_lbs) {
+          return String(currentStep.exercise.weight_lbs);
+        }
+        // Fall back to last recorded weight from history
+        const history = exerciseHistory?.get(currentStep.exercise.exercise_id);
+        if (history?.last_weight_lbs != null) {
+          return String(history.last_weight_lbs);
+        }
       }
     }
     return '';
-  }, [currentStep]);
+  }, [currentStep, exerciseHistory]);
 
   // Reset editWeight when the derived default changes
   useEffect(() => {
@@ -216,6 +242,7 @@ export default function WorkoutPlayerScreen() {
         exerciseTimerSeconds={exerciseTimerSeconds}
         editWeight={editWeight}
         setEditWeight={setEditWeight}
+        lastWeight={exerciseHistory?.get(exercise.exercise_id)?.last_weight_lbs ?? null}
       />
 
       {/* Bottom actions */}
@@ -287,6 +314,7 @@ function ExerciseContent({
   exerciseTimerSeconds,
   editWeight,
   setEditWeight,
+  lastWeight,
 }: {
   currentStep: PlayerStep;
   exercise: WorkoutSectionExercise & { exercise: Exercise };
@@ -294,6 +322,7 @@ function ExerciseContent({
   exerciseTimerSeconds: number;
   editWeight: string;
   setEditWeight: (v: string) => void;
+  lastWeight: number | null;
 }) {
   return (
     <View
@@ -383,6 +412,11 @@ function ExerciseContent({
               />
               <Text className="ml-2 text-base text-ink-secondary">lbs</Text>
             </View>
+            {lastWeight != null && !exercise.weight_lbs && (
+              <Text className="mt-1.5 text-xs text-ink-muted">
+                Last time: {lastWeight} lbs
+              </Text>
+            )}
           </View>
         )}
 

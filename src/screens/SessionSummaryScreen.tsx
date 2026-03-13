@@ -5,8 +5,11 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 import { useWorkoutSession } from '../hooks/useWorkoutSession';
+import { useUserStack } from '../hooks/useUserStack';
 import { useAuthStore } from '../stores/authStore';
 import { formatDuration, formatVolume } from '../utils/formatters';
+import StackCheckIn from '../components/supplement/StackCheckIn';
+import SupplementSuggestion from '../components/supplement/SupplementSuggestion';
 import type { SessionExerciseLog } from '../lib/types';
 
 type SummaryRoute = RouteProp<HomeStackParamList, 'SessionSummary'>;
@@ -26,6 +29,7 @@ export default function SessionSummaryScreen() {
 
   const { createSessionAsync, completeSessionAsync, isCreating, isCompleting } =
     useWorkoutSession(userId);
+  const { data: stackItems } = useUserStack(userId);
 
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
@@ -149,6 +153,19 @@ export default function SessionSummaryScreen() {
             blurOnSubmit
           />
         </View>
+
+        {/* Supplement Logging — post-workout check-in */}
+        {stackItems && stackItems.length > 0 && (
+          <View className="mt-6">
+            <Text className="text-sm font-bold text-ink mb-1">Log your post-workout supplements</Text>
+            <StackCheckIn items={stackItems} source="post_workout" />
+          </View>
+        )}
+
+        {/* Supplement Suggestion — contextual post-workout nudge */}
+        <SupplementSuggestion workoutId={sessionData.workoutId} />
+
+        <View className="h-6" />
         </ScrollView>
       </TouchableWithoutFeedback>
 
