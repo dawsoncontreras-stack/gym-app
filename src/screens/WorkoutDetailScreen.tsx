@@ -75,18 +75,13 @@ export default function WorkoutDetailScreen() {
 
   const scheduleDays = useMemo(
     () =>
-      Array.from({ length: 8 }, (_, i) => {
+      Array.from({ length: 5 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() + i);
         d.setHours(0, 0, 0, 0);
         const key = d.toISOString().split('T')[0];
-        const dayName =
-          i === 0
-            ? 'Today'
-            : i === 1
-              ? 'Tomorrow'
-              : d.toLocaleDateString(undefined, { weekday: 'short' });
-        const dateLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
+        const dateLabel = String(d.getDate());
         return { key, dayName, dateLabel };
       }),
     []
@@ -249,21 +244,24 @@ export default function WorkoutDetailScreen() {
         >
           <Pressable
             onPress={() => {}}
-            className="rounded-t-2xl bg-surface px-4 pb-10 pt-5"
+            className="rounded-t-3xl bg-surface px-5 pb-10 pt-4"
           >
             {/* Handle bar */}
-            <View className="mb-4 items-center">
-              <View className="h-1 w-12 rounded-full bg-ink-muted/20" />
+            <View className="mb-5 items-center">
+              <View className="h-1 w-10 rounded-full bg-ink-muted/30" />
             </View>
 
-            <Text className="mb-4 text-lg font-bold text-ink">Schedule Workout</Text>
+            {/* Title & subtitle */}
+            <Text className="text-xl font-bold text-ink">Select a Date & Time</Text>
+            <Text className="mt-1 mb-5 text-sm text-ink-secondary">
+              We'll send reminders before your workout so you can prepare.
+            </Text>
 
-            {/* Day picker */}
-            <Text className="mb-2 text-xs font-medium text-ink-muted">Day</Text>
+            {/* Day picker – horizontal chips */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              className="mb-5"
+              className="mb-6"
             >
               <View className="flex-row gap-2">
                 {scheduleDays.map((day, i) => {
@@ -272,19 +270,21 @@ export default function WorkoutDetailScreen() {
                     <Pressable
                       key={day.key}
                       onPress={() => setSelectedDayIndex(i)}
-                      className={`items-center rounded-xl px-4 py-2.5 ${
-                        isSelected ? 'bg-accent' : 'bg-surface-tertiary'
+                      className={`items-center rounded-xl border px-5 py-3 ${
+                        isSelected
+                          ? 'border-ink bg-ink'
+                          : 'border-surface-tertiary bg-surface'
                       }`}
                     >
                       <Text
-                        className={`text-xs font-semibold ${
+                        className={`text-sm font-medium ${
                           isSelected ? 'text-white' : 'text-ink'
                         }`}
                       >
                         {day.dayName}
                       </Text>
                       <Text
-                        className={`text-2xs ${
+                        className={`text-xs ${
                           isSelected ? 'text-white/70' : 'text-ink-muted'
                         }`}
                       >
@@ -296,96 +296,120 @@ export default function WorkoutDetailScreen() {
               </View>
             </ScrollView>
 
-            {/* Time picker */}
-            <Text className="mb-2 text-xs font-medium text-ink-muted">Time</Text>
-            <View className="mb-5 flex-row items-center gap-3">
-              {/* Hour */}
-              <View className="flex-row items-center rounded-xl bg-surface-tertiary">
-                <Pressable
-                  onPress={() => setSelectedHour((h) => (h > 0 ? h - 1 : 23))}
-                  className="px-3 py-3"
-                >
-                  <Text className="text-base text-accent">−</Text>
-                </Pressable>
-                <Text className="min-w-[48px] text-center text-lg font-bold text-ink">
-                  {pad(selectedHour)}
-                </Text>
-                <Pressable
-                  onPress={() => setSelectedHour((h) => (h < 23 ? h + 1 : 0))}
-                  className="px-3 py-3"
-                >
-                  <Text className="text-base text-accent">+</Text>
-                </Pressable>
+            {/* Time picker – scroll-wheel style */}
+            <View className="mb-6 items-center">
+              <View className="flex-row items-center">
+                {/* Hour column */}
+                <View className="items-center">
+                  <Pressable
+                    onPress={() => setSelectedHour((h) => {
+                      const h12 = h % 12 || 12;
+                      const newH12 = h12 >= 12 ? 1 : h12 + 1;
+                      return h >= 12 ? (newH12 === 12 ? 12 : newH12 + 12) : newH12 % 12;
+                    })}
+                    className="py-1"
+                  >
+                    <Text className="text-lg text-ink-muted/40">
+                      {(() => {
+                        const h12 = selectedHour % 12 || 12;
+                        const prev = h12 <= 1 ? 12 : h12 - 1;
+                        return prev;
+                      })()}
+                    </Text>
+                  </Pressable>
+                  <View className="rounded-lg bg-surface-tertiary px-6 py-2">
+                    <Text className="text-2xl font-bold text-ink">
+                      {selectedHour % 12 || 12}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setSelectedHour((h) => {
+                      const h12 = h % 12 || 12;
+                      const newH12 = h12 <= 1 ? 12 : h12 - 1;
+                      return h >= 12 ? (newH12 === 12 ? 12 : newH12 + 12) : newH12 % 12;
+                    })}
+                    className="py-1"
+                  >
+                    <Text className="text-lg text-ink-muted/40">
+                      {(() => {
+                        const h12 = selectedHour % 12 || 12;
+                        const next = h12 >= 12 ? 1 : h12 + 1;
+                        return next;
+                      })()}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {/* Minute column */}
+                <View className="items-center ml-6">
+                  <Pressable
+                    onPress={() => setSelectedMinute((m) => (m > 0 ? m - 1 : 59))}
+                    className="py-1"
+                  >
+                    <Text className="text-lg text-ink-muted/40">
+                      {pad(selectedMinute > 0 ? selectedMinute - 1 : 59)}
+                    </Text>
+                  </Pressable>
+                  <View className="rounded-lg bg-surface-tertiary px-6 py-2">
+                    <Text className="text-2xl font-bold text-ink">
+                      {pad(selectedMinute)}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setSelectedMinute((m) => (m < 59 ? m + 1 : 0))}
+                    className="py-1"
+                  >
+                    <Text className="text-lg text-ink-muted/40">
+                      {pad(selectedMinute < 59 ? selectedMinute + 1 : 0)}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {/* AM/PM column */}
+                <View className="items-center ml-6">
+                  <Pressable
+                    onPress={() => setSelectedHour((h) => (h >= 12 ? h - 12 : h))}
+                    className="py-1"
+                  >
+                    <Text className={`text-lg ${selectedHour < 12 ? 'text-ink-muted/40' : 'text-ink-muted/40'}`}>
+                      {selectedHour >= 12 ? 'AM' : ''}
+                    </Text>
+                  </Pressable>
+                  <View className="rounded-lg bg-surface-tertiary px-4 py-2">
+                    <Text className="text-2xl font-bold text-ink">
+                      {selectedHour >= 12 ? 'PM' : 'AM'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setSelectedHour((h) => (h < 12 ? h + 12 : h))}
+                    className="py-1"
+                  >
+                    <Text className="text-lg text-ink-muted/40">
+                      {selectedHour >= 12 ? '' : 'PM'}
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
-
-              <Text className="text-lg font-bold text-ink">:</Text>
-
-              {/* Minute */}
-              <View className="flex-row items-center rounded-xl bg-surface-tertiary">
-                <Pressable
-                  onPress={() => setSelectedMinute((m) => (m > 0 ? m - 1 : 59))}
-                  className="px-3 py-3"
-                >
-                  <Text className="text-base text-accent">−</Text>
-                </Pressable>
-                <Text className="min-w-[48px] text-center text-lg font-bold text-ink">
-                  {pad(selectedMinute)}
-                </Text>
-                <Pressable
-                  onPress={() => setSelectedMinute((m) => (m < 59 ? m + 1 : 0))}
-                  className="px-3 py-3"
-                >
-                  <Text className="text-base text-accent">+</Text>
-                </Pressable>
-              </View>
-
-              {/* 12hr display */}
-              <Text className="text-sm text-ink-secondary">
-                {formatTime12(selectedHour, selectedMinute)}
-              </Text>
             </View>
 
-            {/* Quick time presets */}
-            <View className="mb-5 flex-row flex-wrap gap-2">
-              {[
-                { label: '6:00 AM', h: 6, m: 0 },
-                { label: '7:00 AM', h: 7, m: 0 },
-                { label: '8:00 AM', h: 8, m: 0 },
-                { label: '12:00 PM', h: 12, m: 0 },
-                { label: '5:00 PM', h: 17, m: 0 },
-                { label: '6:00 PM', h: 18, m: 0 },
-                { label: '7:00 PM', h: 19, m: 0 },
-                { label: '8:00 PM', h: 20, m: 0 },
-              ].map((preset) => (
-                <Pressable
-                  key={preset.label}
-                  onPress={() => {
-                    setSelectedHour(preset.h);
-                    setSelectedMinute(preset.m);
-                  }}
-                  className={`rounded-lg px-3 py-1.5 ${
-                    selectedHour === preset.h && selectedMinute === preset.m
-                      ? 'border border-accent/30 bg-accent/20'
-                      : 'bg-surface-tertiary'
-                  }`}
-                >
-                  <Text className="text-xs text-ink">{preset.label}</Text>
-                </Pressable>
-              ))}
+            {/* Action buttons */}
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={() => setShowModal(false)}
+                className="flex-1 items-center rounded-full border border-surface-tertiary py-4"
+              >
+                <Text className="text-base font-semibold text-ink">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleConfirmSchedule}
+                disabled={scheduleMutation.isPending}
+                className="flex-1 items-center rounded-full bg-ink py-4"
+              >
+                <Text className="text-base font-semibold text-white">
+                  {scheduleMutation.isPending ? 'Scheduling…' : 'Confirm'}
+                </Text>
+              </Pressable>
             </View>
-
-            {/* Confirm */}
-            <Pressable
-              onPress={handleConfirmSchedule}
-              disabled={scheduleMutation.isPending}
-              className="items-center rounded-xl bg-accent py-4"
-            >
-              <Text className="text-base font-bold text-white">
-                {scheduleMutation.isPending
-                  ? 'Scheduling…'
-                  : `Schedule for ${scheduleDays[selectedDayIndex].dayName} at ${formatTime12(selectedHour, selectedMinute)}`}
-              </Text>
-            </Pressable>
           </Pressable>
         </Pressable>
       </Modal>

@@ -3,7 +3,8 @@
 -- Supplement Companion App
 --
 -- This file covers everything on the USER side of workouts:
--- saving/favoriting, scheduling, and logging completed sessions.
+-- saving/favoriting, scheduling, logging completed sessions,
+-- and per-exercise weight memory for progressive tracking.
 --
 -- Depends on: workout-schema-v1.sql (content tables)
 -- Depends on: Supabase auth (references auth.users)
@@ -128,6 +129,16 @@ create index idx_sessions_scheduled on workout_sessions (scheduled_workout_id)
 --
 -- For timed exercises, there's one row per timed effort with
 -- actual_duration_sec filled in instead of reps/weight.
+--
+-- PLAYER BEHAVIOR:
+-- The weight input starts as a blank slate. If the user doesn't enter
+-- a weight, actual_weight_lbs is NULL — the set is logged as completed
+-- with reps only. This supports both hands-off "just follow along"
+-- users and detailed trackers without forcing either behavior.
+--
+-- Within a session, sets 2+ auto-fill from the previous set's actual
+-- values. Between sessions, the user_exercise_history table provides
+-- the "last time" values to pre-fill (see below).
 -- ============================================================================
 
 create table workout_session_exercises (
@@ -154,9 +165,11 @@ create table workout_session_exercises (
   prescribed_duration_sec int,
 
   -- What the user actually did
-  actual_reps         int,                              -- null for timed exercises
-  actual_weight_lbs   decimal(6,1),                     -- null for bodyweight/timed
-  actual_duration_sec int,                              -- null for rep-based exercises
+  -- NULL weight is normal — means user didn't enter a weight (hands-off mode)
+  -- NULL reps for timed exercises, NULL duration for rep-based exercises
+  actual_reps         int,
+  actual_weight_lbs   decimal(6,1),                     -- null = user didn't track weight this set
+  actual_duration_sec int,
 
   -- Per-set flags
   is_warmup           boolean not null default false,   -- user can mark a set as warmup (excluded from stats)
@@ -177,6 +190,45 @@ create index idx_session_exercises_weight on workout_session_exercises (exercise
 
 
 -- ============================================================================
+-- USER EXERCISE HISTORY
+-- Stores the last weight and reps a user used for each exercise.
+-- Updated after every completed session.
+--
+-- This powers the progressive weight memory in the player:
+-- - First time doing an exercise: input is blank, suggested weight
+--   from the workout template shown off to the side
+-- - Second time: input pre-fills with their last weight/reps,
+--   labeled "last time" — this becomes their baseline
+--
+-- One row per user per exercise. Upserted after each session completes.
+-- Only stores the most recent values, not a full history (that's in
+-- workout_session_exercises if needed for a progress dashboard later).
+-- ============================================================================
+
+create table user_exercise_history (
+  user_id         uuid not null references auth.users(id) on delete cascade,
+  exercise_id     uuid not null references exercises(id) on delete cascade,
+
+  -- Last recorded values (from the most recent non-skipped, non-warmup set)
+  last_weight_lbs decimal(6,1),                         -- null if they never entered a weight
+  last_reps       int,                                  -- null if timed exercise
+  last_duration_sec int,                                -- null if rep-based exercise
+
+  -- When this was last updated (for "last time" context in the UI)
+  last_performed_at timestamptz not null default now(),
+
+  -- Which session this came from (for linking to session detail if needed)
+  last_session_id uuid references workout_sessions(id) on delete set null,
+
+  primary key (user_id, exercise_id)
+);
+
+-- "When loading the player, fetch all exercise history for this user
+--  for the exercises in this workout"
+create index idx_exercise_history_user on user_exercise_history (user_id);
+
+
+-- ============================================================================
 -- RLS POLICIES
 -- Enable row-level security on all user tables.
 -- Each user can only read/write their own rows.
@@ -186,6 +238,7 @@ alter table user_saved_workouts enable row level security;
 alter table user_scheduled_workouts enable row level security;
 alter table workout_sessions enable row level security;
 alter table workout_session_exercises enable row level security;
+alter table user_exercise_history enable row level security;
 
 -- Saved workouts
 create policy "Users can manage their own saved workouts"
@@ -224,6 +277,12 @@ create policy "Users can manage exercises in their own sessions"
         and workout_sessions.user_id = auth.uid()
     )
   );
+
+-- Exercise history
+create policy "Users can manage their own exercise history"
+  on user_exercise_history for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 
 -- ============================================================================
@@ -281,3 +340,29 @@ from workout_sessions ws
 join workouts w on w.id = ws.workout_id
 where ws.status = 'completed'
 order by ws.completed_at desc;
+
+
+-- ============================================================================
+-- NOTES ON SESSION COMPLETION LOGIC
+--
+-- When a workout session is completed, the app should:
+--
+-- 1. Write all workout_session_exercises rows in a single batch
+--
+-- 2. Compute summary stats and update the workout_sessions row:
+--    - duration_sec: wall-clock time from started_at to now
+--    - total_volume_lbs: sum of (actual_weight_lbs × actual_reps)
+--      across all non-skipped, non-warmup sets where weight was entered
+--    - total_sets: count of non-skipped sets
+--    - total_reps: sum of actual_reps across non-skipped sets
+--
+-- 3. Upsert user_exercise_history for each exercise where the user
+--    entered weight data. For each exercise, take the LAST non-skipped,
+--    non-warmup set's actual values as the "last" values. This means:
+--    - If they did 4 sets of bench at 135, 155, 155, 155 → last = 155
+--    - If they did 3 sets and skipped the 4th → last = set 3's values
+--    - If they never entered weight → don't upsert (preserve any
+--      existing history from a previous session where they did track)
+--
+-- 4. Show the session summary screen with stats + supplement logging
+-- ============================================================================

@@ -20,7 +20,10 @@
       "Bash(ls /tmp/metro-*)",
       "Bash(find node_modules/nativewind -name *.css -o -name output*)",
       "Bash(find . -name nativewind-output* -o -name .nativewind*)",
-      "Bash(find . -path ./node_modules -prune -o -name *.css -print)"
+      "Bash(find . -path ./node_modules -prune -o -name *.css -print)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
